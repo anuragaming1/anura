@@ -1,0 +1,109 @@
+--// Anura Hub - Part 1: Config, Auto Team, FPS Boost
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+repeat wait() until LocalPlayer.Character
+
+-- Config cơ bản
+local Config = {
+    Team = "Pirates", -- "Pirates" hoặc "Marines"
+    FPSBoost = true,
+}
+
+-- Auto chọn team (CHẮC CHẮN HOẠT ĐỘNG)
+local function ChooseTeam()
+    local VirtualInput = game:GetService("VirtualInputManager")
+    local function pressButton(team)
+        for _,v in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+            if v:IsA("TextButton") and v.Text:lower():find(team:lower()) then
+                VirtualInput:SendMouseButtonEvent(v.AbsolutePosition.X + 5, v.AbsolutePosition.Y + 5, 0, true, game, 1)
+                VirtualInput:SendMouseButtonEvent(v.AbsolutePosition.X + 5, v.AbsolutePosition.Y + 5, 0, false, game, 1)
+            end
+        end
+    end
+
+    spawn(function()
+        while wait(1) do
+            if game:GetService("Players").LocalPlayer.Team == nil then
+                pressButton(Config.Team)
+            end
+        end
+    end)
+end
+
+-- Anura Hub - Fix Lag Nặng Nhất (Map tối giản mạnh, giữ gameplay)
+pcall(function()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+
+    local lighting = game:GetService("Lighting")
+    lighting.GlobalShadows = false
+    lighting.FogEnd = 1e9
+    lighting.Brightness = 1
+    lighting.EnvironmentDiffuseScale = 0
+    lighting.EnvironmentSpecularScale = 0
+    for _,v in pairs(lighting:GetChildren()) do
+        if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") 
+        or v:IsA("ColorCorrectionEffect") or v:IsA("DepthOfFieldEffect") then
+            v:Destroy()
+        end
+    end
+
+    for _,v in pairs(game:GetDescendants()) do
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
+            v:Destroy()
+        end
+
+        if v:IsA("Decal") or v:IsA("Texture") then
+            v:Destroy()
+        end
+
+        if v:IsA("BasePart") or v:IsA("MeshPart") then
+            if not v:IsDescendantOf(game.Players.LocalPlayer.Character) then
+                v.Material = Enum.Material.SmoothPlastic
+                v.Reflectance = 0
+                v.CastShadow = false
+
+                -- Xoá những object nhẹ tênh (lá, cây, mây, fx, decor,...)
+                local name = v.Name:lower()
+                if name:find("tree") or name:find("leaf") or name:find("grass") or name:find("bush") or name:find("rock")
+                or name:find("cloud") or name:find("fx") or name:find("fog") or name:find("decal") or name:find("deco") then
+                    v:Destroy()
+                end
+            end
+        end
+    end
+
+    local terrain = workspace:FindFirstChildOfClass("Terrain")
+    if terrain then
+        terrain.WaterWaveSize = 0
+        terrain.WaterWaveSpeed = 0
+        terrain.WaterReflectance = 0
+        terrain.WaterTransparency = 1
+    end
+end)
+
+-- Auto bật PvP / Haki / Aura / Race
+local function AutoBuff()
+    local VInput = game:GetService("VirtualInputManager")
+    RunService.RenderStepped:Connect(function()
+        pcall(function()
+            -- Observation (E)
+            VInput:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+            VInput:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+            -- Aura (J)
+            VInput:SendKeyEvent(true, Enum.KeyCode.J, false, game)
+            VInput:SendKeyEvent(false, Enum.KeyCode.J, false, game)
+            -- V3 (T)
+            VInput:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+            VInput:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+            -- V4 (Y)
+            VInput:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
+            VInput:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+        end)
+    end)
+end
+
+-- Khởi chạy tất cả
+ChooseTeam()
+FPSBoost()
+AutoBuff()
