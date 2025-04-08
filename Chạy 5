@@ -1,0 +1,148 @@
+--// Ultra Auto Combo System (Tự động 100%)
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RunService = game:GetService("RunService")
+
+-- CẤU HÌNH NÂNG CAO
+local Config = {
+    AttackRange = 300, -- Phạm vi tấn công
+    ComboSpeed = 0.01, -- Tốc độ combo (giây)
+    WeaponSwitchDelay = 0.07, -- Thời gian đổi vũ khí
+    TargetRefreshRate = 1, -- Tần suất tìm mục tiêu mới (giây)
+    SupportSkillsInterval = 7, -- Kích hoạt skill hỗ trợ mỗi (giây)
+    AutoPvP = true -- Tự động bật PvP
+}
+
+-- DANH SÁCH COMBO TỐI ƯU
+local OptimalCombo = {
+    {Weapon = "Melee", Key = "C", Priority = 1},
+    {Weapon = "Melee", Key = "X", Priority = 2},
+    {Weapon = "Fruit", Key = "Z", Priority = 3},
+    {Weapon = "Fruit", Key = "X", Priority = 4},
+    {Weapon = "Melee", Key = "Z", Priority = 1},
+    {Weapon = "Sword", Key = "Z", Priority = 3},
+    {Weapon = "Gun", Key = "X", Priority = 2},
+    {Weapon = "Fruit", Key = "C", Priority = 4},
+    {Weapon = "Sword", Key = "X", Priority = 3},
+    {Weapon = "Gun", Key = "Z", Priority = 2},
+    {Weapon = "Fruit", Key = "V", Priority = 5},
+    {Weapon = "Fruit", Key = "F", Priority = 5}
+}
+
+-- HỆ THỐNG VŨ KHÍ
+local WeaponSystem = {
+    Melee = "One",
+    Sword = "Two",
+    Gun = "Three",
+    Fruit = "Four",
+    Current = "Melee"
+}
+
+-- BIẾN HỆ THỐNG
+local Target = nil
+local LastAttack = 0
+local SkillCooldowns = {}
+
+-- HÀM NÂNG CAO
+local function AdvancedPress(key)
+    if not key then return end
+    keypress(Enum.KeyCode[key])
+    task.wait(0.05)
+    keyrelease(Enum.KeyCode[key])
+end
+
+local function SwitchWeapon(weaponType)
+    if WeaponSystem.Current == weaponType then return end
+    local key = WeaponSystem[weaponType]
+    if key then
+        AdvancedPress(key)
+        WeaponSystem.Current = weaponType
+        task.wait(Config.WeaponSwitchDelay)
+    end
+end
+
+-- TỰ ĐỘNG TÌM MỤC TIÊU
+local function FindBestTarget()
+    local closest = nil
+    local minDistance = math.huge
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            
+            if humanoid and humanoid.Health > 0 and rootPart then
+                local myRoot = Character:FindFirstChild("HumanoidRootPart")
+                if myRoot then
+                    local distance = (rootPart.Position - myRoot.Position).Magnitude
+                    if distance < Config.AttackRange and distance < minDistance then
+                        closest = player
+                        minDistance = distance
+                    end
+                end
+            end
+        end
+    end
+    
+    return closest
+end
+
+-- HỆ THỐNG COMBO TỰ ĐỘNG
+local function AutoCombo()
+    while task.wait() do
+        -- Làm mới mục tiêu
+        Target = FindBestTarget()
+        
+        if Target and Target.Character then
+            -- Sắp xếp combo theo độ ưu tiên
+            table.sort(OptimalCombo, function(a, b) return a.Priority > b.Priority end)
+            
+            -- Thực hiện combo
+            for _, attack in ipairs(OptimalCombo) do
+                SwitchWeapon(attack.Weapon)
+                AdvancedPress(attack.Key)
+                task.wait(Config.ComboSpeed)
+            end
+            
+            -- Về vũ khí mặc định
+            SwitchWeapon("Melee")
+        else
+            task.wait(Config.TargetRefreshRate)
+        end
+    end
+end
+
+-- TỰ ĐỘNG KĨ NĂNG HỖ TRỢ
+local function AutoSkills()
+    local skills = {"J", "E", "T", "Y"} -- Aura, Instinct, V3, V4
+    while task.wait(Config.SupportSkillsInterval) do
+        for _, skill in ipairs(skills) do
+            AdvancedPress(skill)
+            task.wait(0.1)
+        end
+    end
+end
+
+-- TỰ ĐỘNG PVP
+local function ManagePvP()
+    if Config.AutoPvP then
+        while task.wait(5) do
+            pcall(function()
+                local pvp = require(LocalPlayer.PlayerScripts.CombatFramework.PvP)
+                if pvp and not pvp.active then
+                    pvp:Toggle()
+                end
+            end)
+        end
+    end
+end
+
+-- KHỞI CHẠY HỆ THỐNG
+task.spawn(AutoCombo)
+task.spawn(AutoSkills)
+task.spawn(ManagePvP)
+
+print("🔄 Hệ thống Auto Combo hoàn toàn tự động đã sẵn sàng!")
+print("⚔️ Tự động tìm mục tiêu | 🔄 Tự động combo | 🛡️ Tự động kỹ năng")
