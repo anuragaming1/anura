@@ -1,0 +1,116 @@
+--// Anura Hub - Part1.lua
+local plr = game.Players.LocalPlayer
+repeat wait() until plr.Character
+
+-- UI
+local sg = Instance.new("ScreenGui", game.CoreGui)
+sg.Name = "AnuraHubUI"
+local main = Instance.new("Frame", sg)
+main.Size = UDim2.new(0, 300, 0, 200)
+main.Position = UDim2.new(0.5, -150, 0.5, -100)
+main.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+main.Visible = true
+main.Active = true
+main.Draggable = true
+
+-- Background Image
+local bg = Instance.new("ImageLabel", main)
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.Position = UDim2.new(0, 0, 0, 0)
+bg.Image = "rbxassetid://131151731604309"
+bg.BackgroundTransparency = 1
+
+-- Logo Toggle UI
+local logo = Instance.new("ImageButton", sg)
+logo.Size = UDim2.new(0, 50, 0, 50)
+logo.Position = UDim2.new(0, 10, 0, 10)
+logo.Image = "rbxassetid://95689726591891"
+logo.BackgroundTransparency = 1
+logo.MouseButton1Click:Connect(function()
+	main.Visible = not main.Visible
+end)
+-- Thêm tiêu đề
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.Text = "Anura Hub"
+title.TextColor3 = Color3.fromRGB(255, 80, 80)
+title.TextScaled = true
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+
+-- Hiển thị FPS và thời gian
+local fpsLabel = Instance.new("TextLabel", main)
+fpsLabel.Size = UDim2.new(1, 0, 0, 20)
+fpsLabel.Position = UDim2.new(0, 0, 0, 35)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextColor3 = Color3.new(1, 1, 1)
+fpsLabel.Font = Enum.Font.Code
+fpsLabel.TextScaled = true
+
+local startTime = tick()
+game:GetService("RunService").RenderStepped:Connect(function()
+	local fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
+	local uptime = math.floor(tick() - startTime)
+	fpsLabel.Text = "FPS: " .. fps .. " | Time: " .. uptime .. "s"
+end)
+--// Anura Hub - Part2.lua (HUD Thông Tin + Next Player)
+
+local plr = game.Players.LocalPlayer
+local sg = game.CoreGui:FindFirstChild("AnuraHubUI")
+if not sg then return end
+local main = sg:FindFirstChildOfClass("Frame")
+
+-- HUD Label
+local hud = Instance.new("TextLabel", main)
+hud.Size = UDim2.new(1, 0, 0, 80)
+hud.Position = UDim2.new(0, 0, 0, 60)
+hud.BackgroundTransparency = 1
+hud.TextColor3 = Color3.fromRGB(0, 255, 0)
+hud.Font = Enum.Font.Code
+hud.TextScaled = true
+hud.TextWrapped = true
+hud.Text = "Loading HUD..."
+
+local bounty = 0
+local totalKill = 0
+local currentTarget = "None"
+local players = game:GetService("Players")
+
+-- Nút "Next Player"
+local nextBtn = Instance.new("TextButton", main)
+nextBtn.Size = UDim2.new(1, 0, 0, 30)
+nextBtn.Position = UDim2.new(0, 0, 1, -30)
+nextBtn.Text = "Next Player"
+nextBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 255)
+nextBtn.TextColor3 = Color3.new(1, 1, 1)
+nextBtn.Font = Enum.Font.GothamBold
+nextBtn.TextScaled = true
+nextBtn.MouseButton1Click:Connect(function()
+	-- Placeholder xử lý đổi mục tiêu
+	currentTarget = "Tìm người chơi mới..."
+	wait(1)
+	for _, p in pairs(players:GetPlayers()) do
+		if p ~= plr and p.Team ~= plr.Team and not p.Neutral then
+			currentTarget = p.Name
+			break
+		end
+	end
+end)
+
+-- Cập nhật thông tin liên tục
+spawn(function()
+	while true do wait(1)
+		local stats = plr:FindFirstChild("leaderstats")
+		if stats and stats:FindFirstChild("Bounty") then
+			bounty = stats.Bounty.Value
+		end
+		hud.Text = string.format(
+			"Bounty: %s\nKill: %s\nTarget: %s\nPlayers: %d",
+			bounty,
+			totalKill,
+			currentTarget,
+			#players:GetPlayers()
+		)
+	end
+end)
