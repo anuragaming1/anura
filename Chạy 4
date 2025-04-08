@@ -1,0 +1,59 @@
+--// Anura Hub Auto Combo Skill (Thứ tự chuẩn)
+local VIM = game:GetService("VirtualInputManager")
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- Gán phím và vũ khí
+local SkillOrder = {
+    {slot = "1", key = "c"}, -- Melee C
+    {slot = "1", key = "x"}, -- Melee X
+    {slot = "4", key = "z"}, -- Fruit Z
+    {slot = "4", key = "x"}, -- Fruit X
+    {slot = "1", key = "z"}, -- Melee Z
+    {slot = "2", key = "z"}, -- Sword Z
+    {slot = "3", key = "x"}, -- Gun X
+    {slot = "4", key = "c"}, -- Fruit C
+    {slot = "2", key = "x"}, -- Sword X
+    {slot = "3", key = "z"}, -- Gun Z
+    {slot = "4", key = "v"}, -- Fruit V
+    {slot = "4", key = "f"}  -- Fruit F
+}
+
+local function pressKey(key)
+    VIM:SendKeyEvent(true, key, false, game)
+    task.wait(0.02)
+    VIM:SendKeyEvent(false, key, false, game)
+end
+
+local function getClosestEnemy()
+    local closest, dist = nil, math.huge
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LP and v.Team ~= LP.Team and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = v.Character:FindFirstChild("HumanoidRootPart")
+            local hum = v.Character:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 and not v.Character:FindFirstChild("ForceField") then
+                local mag = (LP.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+                if mag < dist and mag < 100 then
+                    dist = mag
+                    closest = v
+                end
+            end
+        end
+    end
+    return closest
+end
+
+--// Auto Combo Loop
+task.spawn(function()
+    while task.wait(0.4) do
+        local target = getClosestEnemy()
+        if target then
+            for _, act in ipairs(SkillOrder) do
+                pressKey(act.slot) -- đổi vũ khí
+                task.wait(0.1)
+                pressKey(act.key) -- dùng chiêu
+                task.wait(0.2)
+            end
+        end
+    end
+end)
