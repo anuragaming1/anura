@@ -1,0 +1,36 @@
+--[[
+    Anura Hub - Auto Bounty
+    Part 4: Auto Team + Auto PvP
+    Tác giả: Bạn yêu
+]]
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local toggleAutoPvP = true
+local preferredTeam = "Pirates" -- Chọn "Pirates" hoặc "Marines"
+
+-- Auto chọn team khi chưa có team
+spawn(function()
+    while wait(1) do
+        if LocalPlayer.Team == nil or tostring(LocalPlayer.Team) ~= preferredTeam then
+            pcall(function()
+                if preferredTeam == "Pirates" then
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+                elseif preferredTeam == "Marines" then
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+                end
+            end)
+        end
+    end
+end)
+
+-- Auto bật PvP liên tục
+spawn(function()
+    while toggleAutoPvP do
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("EnablePvp")
+        end)
+        wait(2)
+    end
+end)
