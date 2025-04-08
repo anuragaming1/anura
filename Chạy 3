@@ -1,0 +1,258 @@
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
+
+-- Cấu hình
+local MAX_CHASE_TIME = 45 -- Giây
+local MAX_NO_DAMAGE_TIME = 30 -- Giây
+local SAFE_HEALTH_THRESHOLD = 0.1 -- 10% máu
+local RETURN_HEALTH_THRESHOLD = 0.3 -- 30% máu
+local EVADE_HEIGHT = 50 -- Độ cao khi né đòn
+
+-- Biến quản lý
+local currentTarget = nil
+local currentTween = nil
+local isChasing = false
+local isEvading = false
+local lastDamageTime = 0
+local chaseStartTime = 0
+local connection = nil
+local damageConnection = nil
+local humanoidConnection = nil
+
+-- Hàm hủy các kết nối
+local function cleanup()
+    if connection then
+        connection:Disconnect()
+        connection = nil
+    end
+    if damageConnection then
+        damageConnection:Disconnect()
+        damageConnection = nil
+    end
+    if humanoidConnection then
+        humanoidConnection:Disconnect()
+        humanoidConnection = nil
+    end
+    if currentTween then
+        currentTween:Cancel()
+        currentTween = nil
+    end
+end
+
+-- Kiểm tra vùng an toàn hoặc PvP (cần điều chỉnh theo game cụ thể)
+local function isInSafeZone(player)
+    -- Thêm logic kiểm tra vùng an toàn của game bạn ở đây
+    return false
+end
+
+-- Kiểm tra damage gần đây
+local function setupDamageTracking()
+    -- Giả sử game có RemoteEvent để track damage
+    -- Đây chỉ là ví dụ, cần điều chỉnh theo game cụ thể
+    local damageEvent = ReplicatedStorage:FindFirstChild("DamageEvent") or Instance.new("RemoteEvent")
+    damageConnection = damageEvent.OnClientEvent:Connect(function(hitPlayer, damage)
+        if hitPlayer == currentTarget then
+            lastDamageTime = os.time()
+        end
+    end)
+end
+
+-- Tìm người chơi hợp lệ để target
+local function getValidTarget()
+    local validPlayers = {}
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local targetHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            
+            if targetHumanoid and targetHumanoid.Health > 0 and targetRoot and not isInSafeZone(player) then
+                table.insert(validPlayers, player)
+            end
+        end
+    end
+    
+    -- Sắp xếp theo khoảng cách gần nhất
+    table.sort(validPlayers, function(a, b)
+        return (HRP.Position - a.Character.HumanoidRootPart.Position).Magnitude < 
+               (HRP.Position - b.Character.HumanoidRootPart.Position).Magnitude
+    end)
+    
+    return validPlayers[1]
+end
+
+-- Di chuyển đến vị trí
+local function moveToPosition(position, speed)
+    if currentTween then
+        currentTween:Cancel()
+    end
+    
+    local distance = (HRP.Position - position).Magnitude
+    local duration = distance / speed
+    
+    currentTween = TweenService:Create(
+        HRP,
+        TweenInfo.new(duration, Enum.EasingStyle.Linear),
+        {CFrame = CFrame.new(position)}
+    )
+    currentTween:Play()
+    return currentTween
+end
+
+-- Bay lên cao để né đòn
+local function evade()
+    if isEvading then return end
+    
+    isEvading = true
+    local startPos = HRP.Position
+    local evadePos = startPos + Vector3.new(0, EVADE_HEIGHT, 0)
+    
+    moveToPosition(evadePos, 100) -- Tốc độ bay lên nhanh
+    
+    -- Kiểm tra máu để quay lại
+    local checkHealthConn
+    checkHealthConn = RunService.Heartbeat:Connect(function()
+        if Humanoid.Health / Humanoid.MaxHealth > RETURN_HEALTH_THRESHOLD then
+            checkHealthConn:Disconnect()
+            isEvading = false
+            if currentTarget and currentTarget.Character then
+                moveToPosition(currentTarget.Character.HumanoidRootPart.Position, 300)
+            end
+        end
+    end)
+end
+
+-- Đổi server
+local function changeServer()
+    -- Tìm server có nhiều người chơi hơn
+    local success, result = pcall(function()
+        return TeleportService:GetCurrentServerInstanceId()
+    end)
+    
+    if success then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, result)
+    else
+        LocalPlayer:Kick("Đang chuyển server...")
+        task.wait(2)
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+    end
+end
+
+-- Bắt đầu đuổi mục tiêu
+local function chaseTarget(target)
+    if not target or not target.Character then return end
+    
+    cleanup()
+    currentTarget = target
+    chaseStartTime = os.time()
+    lastDamageTime = os.time()
+    
+    -- Thiết lập tracking damage
+    setupDamageTracking()
+    
+    -- Theo dõi máu của bản thân
+    humanoidConnection = Humanoid.HealthChanged:Connect(function()
+        local healthRatio = Humanoid.Health / Humanoid.MaxHealth
+        
+        if healthRatio < SAFE_HEALTH_THRESHOLD and not isEvading then
+            evade()
+        end
+    end)
+    
+    -- Vòng lặp đuổi bám chính
+    connection = RunService.Heartbeat:Connect(function()
+        -- Kiểm tra điều kiện dừng
+        if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+            cleanup()
+            return
+        end
+        
+        local targetHumanoid = target.Character:FindFirstChildOfClass("Humanoid")
+        if not targetHumanoid or targetHumanoid.Health <= 0 then
+            cleanup()
+            return
+        end
+        
+        -- Kiểm tra thời gian
+        local currentTime = os.time()
+        if currentTime - lastDamageTime > MAX_NO_DAMAGE_TIME then
+            cleanup()
+            return
+        end
+        
+        if currentTime - chaseStartTime > MAX_CHASE_TIME then
+            cleanup()
+            return
+        end
+        
+        -- Kiểm tra vùng an toàn
+        if isInSafeZone(target) then
+            cleanup()
+            return
+        end
+        
+        -- Di chuyển đến mục tiêu
+        local targetPos = target.Character.HumanoidRootPart.Position
+        if isEvading then
+            targetPos = targetPos + Vector3.new(0, EVADE_HEIGHT, 0)
+        end
+        
+        moveToPosition(targetPos, 300) -- Tốc độ di chuyển cao
+    end)
+end
+
+-- Hàm chính
+local function mainLoop()
+    while true do
+        -- Kiểm tra nếu kill hết người chơi
+        if #Players:GetPlayers() <= 1 then
+            changeServer()
+            break
+        end
+        
+        -- Tìm mục tiêu mới
+        local target = getValidTarget()
+        
+        if target then
+            chaseTarget(target)
+            
+            -- Chờ cho đến khi kết thúc chase (do điều kiện nào đó)
+            while connection do
+                task.wait(1)
+            end
+            
+            -- Nếu bị kill, đổi server
+            if Humanoid.Health <= 0 then
+                task.wait(3) -- Chờ respawn
+                changeServer()
+                break
+            end
+        else
+            task.wait(1)
+        end
+    end
+end
+
+-- Xử lý khi respawn
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    HRP = newChar:WaitForChild("HumanoidRootPart")
+    Humanoid = newChar:WaitForChild("Humanoid")
+    
+    -- Bắt đầu lại nếu bị kill
+    if isChasing then
+        task.wait(1) -- Chờ 1s sau khi respawn
+        mainLoop()
+    end
+end)
+
+-- Bắt đầu chương trình
+mainLoop()
