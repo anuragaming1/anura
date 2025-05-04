@@ -1,130 +1,106 @@
 local TweenService = game:GetService("TweenService")
 local Stats = game:GetService("Stats")
 
--- GUI chính
+-- Hàm ép GUI lên trên cùng
+local function ForceTop(gui)
+    gui.DisplayOrder = 999999
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    spawn(function()
+        while true do
+            gui.Parent = game.CoreGui
+            gui.DisplayOrder = 999999
+            for _, v in pairs(gui:GetDescendants()) do
+                if v:IsA("GuiObject") then
+                    v.ZIndex = 999999
+                end
+            end
+            wait(0.5)
+        end
+    end)
+end
+
+-- Tạo ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "AnuraHubUI"
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Name = "AnuraHubTyrantUI"
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game.CoreGui
-
-local FullUI = Instance.new("Frame")
-FullUI.Size = UDim2.new(1, 0, 1, 0)
-FullUI.Position = UDim2.new(0, 0, 0, 0)
-FullUI.BackgroundTransparency = 1
-FullUI.ZIndex = 9999
-FullUI.Parent = ScreenGui
-
--- Nền đen phủ toàn bộ để "lấn át" phần chơi
-local DarkOverlay = Instance.new("Frame")
-DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
-DarkOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
-DarkOverlay.BackgroundTransparency = 0.3 -- 0 = đen đặc, 0.3 là nửa trong suốt
-DarkOverlay.ZIndex = 9998
-DarkOverlay.Parent = FullUI
+ForceTop(ScreenGui)
 
 -- Ảnh nền
-local BackgroundImage = Instance.new("ImageLabel")
-BackgroundImage.Size = UDim2.new(1, 0, 1, 0)
-BackgroundImage.BackgroundTransparency = 1
-BackgroundImage.Image = "rbxassetid://13983616919"
-BackgroundImage.ScaleType = Enum.ScaleType.Crop
-BackgroundImage.ZIndex = 9999
-BackgroundImage.Parent = FullUI
-
--- Tiêu đề
-local Title = Instance.new("TextLabel")
-Title.Text = "Anura Hub - Tyrant of the Skies"
-Title.Size = UDim2.new(1, 0, 0.1, 0)
-Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(0, 255, 170)
-Title.Font = Enum.Font.GothamBlack
-Title.TextScaled = true
-Title.ZIndex = 10000
-Title.Parent = FullUI
+local bg = Instance.new("ImageLabel", ScreenGui)
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.Position = UDim2.new(0, 0, 0, 0)
+bg.Image = "rbxassetid://13983616919"
+bg.BackgroundTransparency = 1
 
 -- Viền 7 màu
-local borders = {}
-local thickness = 5
-local function createBorder(size, pos)
-	local border = Instance.new("Frame")
-	border.Size = size
-	border.Position = pos
-	border.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-	border.BorderSizePixel = 0
-	border.ZIndex = 10001
-	border.Parent = FullUI
-	table.insert(borders, border)
-end
-createBorder(UDim2.new(1, 0, 0, thickness), UDim2.new(0, 0, 0, 0))
-createBorder(UDim2.new(1, 0, 0, thickness), UDim2.new(0, 0, 1, -thickness))
-createBorder(UDim2.new(0, thickness, 1, 0), UDim2.new(0, 0, 0, 0))
-createBorder(UDim2.new(0, thickness, 1, 0), UDim2.new(1, -thickness, 0, 0))
+local border = Instance.new("Frame", ScreenGui)
+border.Size = UDim2.new(1, 0, 1, 0)
+border.BackgroundTransparency = 1
+border.BorderSizePixel = 10
+border.BorderColor3 = Color3.new(1, 0, 0)
 
+local rainbow = 0
 spawn(function()
-	local hue = 0
-	while true do
-		local color = Color3.fromHSV(hue, 1, 1)
-		for _, border in ipairs(borders) do
-			TweenService:Create(border, TweenInfo.new(0.5), {BackgroundColor3 = color}):Play()
-		end
-		hue = (hue + 0.01) % 1
-		wait(0.05)
-	end
+    while true do
+        rainbow = rainbow + 0.01
+        border.BorderColor3 = Color3.fromHSV(rainbow % 1, 1, 1)
+        wait(0.05)
+    end
 end)
 
--- FPS & Ping - hàng dọc to rõ
-local FPSLabel = Instance.new("TextLabel")
-FPSLabel.Size = UDim2.new(0, 300, 0, 60)
-FPSLabel.Position = UDim2.new(0, 10, 1, -130)
-FPSLabel.BackgroundTransparency = 1
-FPSLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
-FPSLabel.Font = Enum.Font.GothamBold
-FPSLabel.TextScaled = true
-FPSLabel.Text = "FPS: 0"
-FPSLabel.ZIndex = 10000
-FPSLabel.Parent = FullUI
+-- Tiêu đề chính
+local title = Instance.new("TextLabel", ScreenGui)
+title.Size = UDim2.new(1, 0, 0.1, 0)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.Text = "Anura Hub hop Tyrant of the Skies"
+title.TextColor3 = Color3.fromRGB(0, 255, 100)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBlack
+title.BackgroundTransparency = 1
 
-local PingLabel = Instance.new("TextLabel")
-PingLabel.Size = UDim2.new(0, 300, 0, 60)
-PingLabel.Position = UDim2.new(0, 10, 1, -70)
-PingLabel.BackgroundTransparency = 1
-PingLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
-PingLabel.Font = Enum.Font.GothamBold
-PingLabel.TextScaled = true
-PingLabel.Text = "Ping: 0ms"
-PingLabel.ZIndex = 10000
-PingLabel.Parent = FullUI
+-- FPS & Ping
+local fpsLabel = Instance.new("TextLabel", ScreenGui)
+fpsLabel.Position = UDim2.new(0.02, 0, 0.15, 0)
+fpsLabel.Size = UDim2.new(0.3, 0, 0.08, 0)
+fpsLabel.Text = "FPS: 0"
+fpsLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
+fpsLabel.TextScaled = true
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.Font = Enum.Font.GothamBold
+
+local pingLabel = fpsLabel:Clone()
+pingLabel.Parent = ScreenGui
+pingLabel.Position = UDim2.new(0.02, 0, 0.25, 0)
+pingLabel.Text = "Ping: 0 ms"
+
+-- Loading...
+local loading = Instance.new("TextLabel", ScreenGui)
+loading.Size = UDim2.new(1, 0, 0.05, 0)
+loading.Position = UDim2.new(0, 0, 0.95, 0)
+loading.Text = "Loading..."
+loading.TextScaled = true
+loading.Font = Enum.Font.GothamBlack
+loading.BackgroundTransparency = 1
 
 spawn(function()
-	while wait(0.5) do
-		local fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
-		local ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-		FPSLabel.Text = "FPS: " .. fps
-		PingLabel.Text = "Ping: " .. math.floor(ping) .. "ms"
-	end
+    local h = 0
+    while true do
+        h = h + 0.02
+        loading.TextColor3 = Color3.fromHSV(h % 1, 1, 1)
+        wait(0.1)
+    end
 end)
 
--- Chữ Loading nhấp nháy 7 màu
-local Loading = Instance.new("TextLabel")
-Loading.Text = "Loading..."
-Loading.Size = UDim2.new(0, 300, 0, 40)
-Loading.Position = UDim2.new(0.5, -150, 1, -40)
-Loading.BackgroundTransparency = 1
-Loading.Font = Enum.Font.GothamBold
-Loading.TextScaled = true
-Loading.ZIndex = 10000
-Loading.Parent = FullUI
-
+-- Cập nhật FPS & Ping
 spawn(function()
-	local hue = 0
-	while true do
-		Loading.TextColor3 = Color3.fromHSV(hue, 1, 1)
-		hue = (hue + 0.01) % 1
-		wait(0.05)
-	end
+    while true do
+        local fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
+        local ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValueString():gsub(" ms", "")
+        fpsLabel.Text = "FPS: " .. fps
+        pingLabel.Text = "Ping: " .. ping .. " ms"
+    end
 end)
 task.delay(4, function()
     pcall(function()
