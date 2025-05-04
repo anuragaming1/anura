@@ -126,7 +126,7 @@ spawn(function()
 		wait(0.05)
 	end
 end)
-task.delay(6, function()
+task.delay(4, function()
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/skibidip1/Hack/refs/heads/main/Tyrant%20of%20the%20Skies"))()
     end)
