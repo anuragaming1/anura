@@ -102,7 +102,7 @@ spawn(function()
         pingLabel.Text = "Ping: " .. ping .. " ms"
     end
 end)
-task.delay(4, function()
+task.delay(3, function()
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/skibidip1/Hack/refs/heads/main/Tyrant%20of%20the%20Skies"))()
     end)
