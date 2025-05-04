@@ -1,0 +1,6 @@
+spawn(function()
+    while wait(2) do -- Thời gian lặp lại: 300 giây (5 phút), có thể chỉnh thành 180 = 3 phút, v.v.
+        local message = " nhớ vô đăng kí kênh:Anura Gaming"
+        game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+    end
+end)
