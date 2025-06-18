@@ -1,0 +1,97 @@
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "AnuraLangSelector"
+gui.ResetOnSpawn = false
+
+-- Loading Label
+local loadingText = Instance.new("TextLabel", gui)
+loadingText.Size = UDim2.new(0, 200, 0, 50)
+loadingText.Position = UDim2.new(0.5, -100, 0.5, -25)
+loadingText.BackgroundTransparency = 1
+loadingText.TextScaled = true
+loadingText.Font = Enum.Font.GothamBold
+loadingText.TextColor3 = Color3.fromRGB(0, 255, 255)
+loadingText.Text = "Loading 0%"
+loadingText.Name = "LoadingLabel"
+
+-- Loading effect: 1% -> 100% trong 4 giây
+task.spawn(function()
+	for i = 1, 100 do
+		loadingText.Text = "Loading " .. i .. "%"
+		task.wait(0.04)
+	end
+	loadingText:Destroy() -- Xoá loading
+end)
+
+-- Chờ 4 giây rồi hiện UI
+task.delay(4, function()
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(0, 250, 0, 150)
+	frame.Position = UDim2.new(0.5, -125, 0.5, -75) -- Giữa màn hình
+	frame.BackgroundTransparency = 1
+	frame.Parent = gui
+
+	local bg = Instance.new("ImageLabel")
+	bg.Size = UDim2.new(1, 0, 1, 0)
+	bg.Position = UDim2.new(0, 0, 0, 0)
+	bg.BackgroundTransparency = 1
+	bg.Image = "rbxassetid://115012038681218"
+	bg.ScaleType = Enum.ScaleType.Crop
+	bg.Parent = frame
+
+	local corner = Instance.new("UICorner", bg)
+	corner.CornerRadius = UDim.new(0, 18)
+
+	local stroke = Instance.new("UIStroke", bg)
+	stroke.Thickness = 3
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.LineJoinMode = Enum.LineJoinMode.Round
+	stroke.Color = Color3.fromRGB(255, 0, 0)
+
+	-- Viền 7 màu
+	task.spawn(function()
+		local hsv = 0
+		while gui and gui.Parent do
+			hsv = (hsv + 1) % 360
+			stroke.Color = Color3.fromHSV(hsv / 360, 1, 1)
+			task.wait(0.03)
+		end
+	end)
+
+	-- Tiêu đề
+	local title = Instance.new("TextLabel")
+	title.Text = "🌐 Select Language"
+	title.Size = UDim2.new(1, -20, 0, 30)
+	title.Position = UDim2.new(0, 10, 0, 5)
+	title.BackgroundTransparency = 1
+	title.TextColor3 = Color3.fromRGB(0, 170, 255) -- Xanh dương
+	title.TextScaled = true
+	title.Font = Enum.Font.GothamBold
+	title.Parent = bg
+
+	-- Tạo nút
+	local function createLangButton(text, yPos, scriptUrl)
+		local button = Instance.new("TextButton")
+		button.Text = text
+		button.Size = UDim2.new(1, -40, 0, 30)
+		button.Position = UDim2.new(0, 20, 0, yPos)
+		button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		button.BackgroundTransparency = 0.2
+		button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		button.Font = Enum.Font.Gotham
+		button.TextScaled = true
+		button.Parent = bg
+
+		local btnCorner = Instance.new("UICorner", button)
+		btnCorner.CornerRadius = UDim.new(0, 10)
+
+		button.MouseButton1Click:Connect(function()
+			gui:Destroy()
+			loadstring(game:HttpGet(scriptUrl))()
+		end)
+	end
+
+	createLangButton("Việt Nam 🇻🇳", 45, "https://raw.githubusercontent.com/anuragaming1/Test-scriptv1/refs/heads/main/Anurahub")
+	createLangButton("ภาษาไทย 🇹🇭", 80, "https://raw.githubusercontent.com/anuragaming1/Test-scriptv1/refs/heads/main/Thailan")
+	createLangButton("English 🇬🇧", 115, "https://raw.githubusercontent.com/anuragaming1/Test-scriptv1/refs/heads/main/English")
+end)
